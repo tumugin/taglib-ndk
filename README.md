@@ -1,26 +1,71 @@
-# TagLib
+# taglib-ndk
+Android NDK(Java) wrapper for [taglib](http://taglib.github.com/).
 
-[![Build Status](https://travis-ci.org/taglib/taglib.svg?branch=master)](https://travis-ci.org/taglib/taglib)
+THIS IS EXPERIMENTAL PROJECT!!!! Not all APIs are wrapped and might be unstable.
 
-### TagLib Audio Meta-Data Library
+## How to use in your App
+You must have these dependencies installed on `Android SDK` before you start.
 
-http://taglib.org/
+- Android NDK
+- CMake
 
-TagLib is a library for reading and editing the meta-data of several
-popular audio formats. Currently it supports both ID3v1 and [ID3v2][]
-for MP3 files, [Ogg Vorbis][] comments and ID3 tags and Vorbis comments
-in [FLAC][], MPC, Speex, WavPack, TrueAudio, WAV, AIFF, MP4 and ASF
-files.
+Also `Swig` is required to generate wrapper files.
+- Swig(install this from apt or brew...or whatever you use)
 
-TagLib is distributed under the [GNU Lesser General Public License][]
-(LGPL) and [Mozilla Public License][] (MPL). Essentially that means that
-it may be used in proprietary applications, but if changes are made to
-TagLib they must be contributed back to the project. Please review the
-licenses if you are considering using TagLib in your project.
+### git clone this repository
+`git clone` under `src/main/cpp/`.
 
-  [ID3v2]: http://www.id3.org 
-  [Ogg Vorbis]: http://vorbis.com/
-  [FLAC]: https://xiph.org/flac/
-  [GNU Lesser General Public License]: http://www.gnu.org/licenses/lgpl.html
-  [Mozilla Public License]: http://www.mozilla.org/MPL/MPL-1.1.html
+### Generate Java/C++ wrapper files
+```sh
+cd taglib/swig
+swig -java -c++ -package com.yourapp.taglib -outdir /(path_to_your_project_root)/app/src/main/java/com/yourapp/taglib -o swigout/swig_taglib_wrap.cpp taglib.i
+```
 
+### Write build settings
+Open your `build.gradle` and add this.
+```gradle
+android {
+    defaultConfig {
+        externalNativeBuild {
+            cmake {
+                cppFlags "-std=c++14 -frtti -fexceptions"
+            }
+        }
+    }
+    externalNativeBuild {
+        cmake {
+            path "src/main/cpp/taglib/CMakeLists.txt"
+        }
+    }
+}
+```
+
+Hit `🔨build` on your Android Studio and make sure it builds successfully.
+
+### Use taglib from Java/Kotlin code
+#### Load libs before using
+```kotlin
+// make sure... it's not "libtag"(it will load liblibtag)
+System.loadLibrary("tag")
+```
+### Load some Flac or MP3 and get tag
+```kotlin
+val fileRef = FileRef("/sdcard/01_girls_in_the_frontier (M@STER VERSION).flac")
+val tag = fileRef.tag()
+
+// get title and artist
+val title = tag.title()
+val artist = tag.artist()
+
+// get additional tags
+// check if the tag exists(accessing non exist item will SIGSEGV crash)
+val comment = if (tag.properties().contains("COMMENT")) {
+    tag.properties()["COMMENT"].front()
+} else {
+    ""
+}
+
+// get cover art(will return empty array when cover art does not exist)
+val imageArray = fileRef.GetCoverArt()
+val bitmap = BitmapFactory.decodeByteArray(imageArray, 0, imageArray.size)
+```
