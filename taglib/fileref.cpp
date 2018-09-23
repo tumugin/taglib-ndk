@@ -472,3 +472,73 @@ void FileRef::parse(IOStream *stream, bool readAudioProperties,
 
   d->file = detectByContent(stream, readAudioProperties, audioPropertiesStyle);
 }
+
+std::vector<unsigned char> FileRef::GetCoverArt() {
+  // check is file is valid
+  if (!this->file()->isValid()) {
+    return std::vector<unsigned char>();
+  }
+
+  auto fileASF = dynamic_cast<TagLib::ASF::File *>(this->file());
+  auto fileFLAC = dynamic_cast<TagLib::FLAC::File *>(this->file());
+  auto fileMP4 = dynamic_cast<TagLib::MP4::File *>(this->file());
+  auto fileMPEG = dynamic_cast<TagLib::MPEG::File *>(this->file());
+  TagLib::ID3v2::Tag *tagptr = nullptr;
+
+  if (fileFLAC != nullptr) {
+    // File is FLAC
+    if (fileFLAC->pictureList().size() > 0) {
+      // has picture
+      auto picture = fileFLAC->pictureList().front();
+      auto data = std::vector<unsigned char>(picture->data().size());
+      memcpy(data.data(), picture->data().data(), data.size());
+      return data;
+    }
+    //try ID3v2Tag
+    tagptr = fileFLAC->ID3v2Tag(false);
+  } else if (fileMP4 != nullptr) {
+    // File is MP4
+    auto itemsListMap = fileMP4->tag()->itemListMap();
+    auto coverItem = itemsListMap["covr"];
+    auto coverArtList = coverItem.toCoverArtList();
+    if (!coverArtList.isEmpty()) {
+      auto coverArt = coverArtList.front();
+      auto data = std::vector<unsigned char>(coverArt.data().size());
+      memcpy(data.data(), coverArt.data().data(), data.size());
+      return data;
+    }
+    // return nothing
+    return std::vector<unsigned char>();
+  } else if (fileASF != nullptr) {
+    // File is ASF
+    auto attrList = fileASF->tag()->attributeListMap()["WM/Picture"];
+    if (!attrList.isEmpty()) {
+      auto pic = attrList.front().toPicture();
+      auto data = std::vector<unsigned char>(pic.picture().size());
+      memcpy(data.data(), pic.picture().data(), data.size());
+      return data;
+    }
+    // return nothing
+    return std::vector<unsigned char>();
+  } else if (fileMPEG != nullptr) {
+    // File is MPEG
+    tagptr = fileMPEG->ID3v2Tag(false);
+  }
+
+  if (tagptr != nullptr) {
+    // has an ID3v2Tag
+    auto frameList = tagptr->frameList("APIC");
+    if (!frameList.isEmpty()) {
+      auto coverImage = dynamic_cast<TagLib::ID3v2::AttachedPictureFrame *>(frameList.front());
+      if (coverImage == nullptr) return std::vector<unsigned char>();
+      auto data = std::vector<unsigned char>(coverImage->picture().size());
+      memcpy(data.data(), coverImage->picture().data(), data.size());
+      return data;
+    }
+    // return nothing
+    return std::vector<unsigned char>();
+  }
+
+  // return nothing when unsupported
+  return std::vector<unsigned char>();
+}

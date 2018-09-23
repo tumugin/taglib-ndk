@@ -331,9 +331,12 @@ set(tag_LIB_SRCS
   fileref.cpp
   audioproperties.cpp
   tagutils.cpp
+  swig/swigout/swig_taglib_wrap.cpp
 )
 
-add_library(tag ${tag_LIB_SRCS} ${tag_HDRS})
+add_library(tag SHARED ${tag_LIB_SRCS} ${tag_HDRS})
+find_library(log-lib log)
+target_link_libraries(tag ${log-lib})
 
 if(HAVE_ZLIB AND NOT HAVE_ZLIB_SOURCE)
   target_link_libraries(tag ${ZLIB_LIBRARIES})

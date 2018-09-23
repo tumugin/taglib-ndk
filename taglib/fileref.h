@@ -174,6 +174,11 @@ namespace TagLib {
     Tag *tag() const;
 
     /*!
+     * Returns a byte array of cover art
+     */
+    std::vector<unsigned char> GetCoverArt();
+
+    /*!
      * Returns the audio properties for this FileRef.  If no audio properties
      * were read then this will returns a null pointer.
      */
