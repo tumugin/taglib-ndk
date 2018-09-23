@@ -40,7 +40,7 @@ android {
 }
 ```
 
-Hit `🔨build` on your Android Studio and make sure it builds successfully.
+Hit `🔨build` on your Android Studio and make sure it builds successfully.
 
 ### Use taglib from Java/Kotlin code
 #### Load libs before using
@@ -48,7 +48,7 @@ Hit `🔨build` on your Android Studio and make sure it builds successfully.
 // make sure... it's not "libtag"(it will load liblibtag)
 System.loadLibrary("tag")
 ```
-### Load some Flac or MP3 and get tag
+### Load some Flac or MP3 and get tag
 ```kotlin
 val fileRef = FileRef("/sdcard/01_girls_in_the_frontier (M@STER VERSION).flac")
 val tag = fileRef.tag()
